@@ -14,14 +14,13 @@ def B(nu, b_T):
 
     Parameters
     ----------
-    :param nu: frequency in GHz at which to evaluate planck function.
-    :type nu: float.
-    :param b_T: inverse temperature of black body.
-    :type b_T: float.
-
+    nu: float
+        frequency in GHz at which to evaluate planck function.
+    b_T: float
+        inverse temperature of black body.
     Returns
     -------
-    :return: float -- black body brightness.
+    float -- black body brightness.
     
     """
     x = constants.h*nu*1.e9*b_T/constants.k
@@ -30,30 +29,38 @@ def B(nu, b_T):
 def mbb(nu,beta,b_T):
     """Modified blackbody function.
 
-    :param nu: frequency in GHz at which to evaluate the SED.
-    :type nu: float.
-    :param beta: spectral index of modified blackbody.
-    :param b_T: inverse temperature of modified black body.
-    :type b_T: float.
-    :return: float -- modified black body brightness.
-    
+    Parameters
+    ----------
+    nu: float
+        frequency in GHz at which to evaluate the SED.
+    beta: float
+        spectral index of modified blackbody.
+    b_T: float
+        inverse temperature of modified black body.
+    Returns
+    -------
+    float -- modified black body brightness.
     """
     return B(nu,b_T)*(1e9*nu)**beta
 
 def MBBpysm(freq,A,beta,b_T,nu0):
     """Modified blackbody function to reproduce Pysm models.
 
-    :param freq: array of frequencies in GHz at which to evaluate the SED.
-    :type freq: array of floats.
-    :param A: Amplitude map for the model in muK_CMB
-    :type A: array of floats.
-    :param beta: spectral index of modified blackbody.
-    :param b_T: inverse temperature of modified black body.
-    :type b_T: float.
-    :param nu0: pivot frequency in GHz.
-    :type nu0: float.        
-    :return: float -- modified black body brightness.
-    
+    Parameters
+    ----------
+    freq: float or numpy array
+        Frequencie(s) in GHz at which to evaluate the SED.
+    A: float or healpy map
+        Amplitude map for the model in muK_CMB
+    beta: float 
+        spectral index of modified blackbody.
+    b_T: float
+        inverse temperature of modified black body.
+    nu0: float
+        pivot frequency in GHz.
+    Returns
+    -------
+    float -- modified black body brightness.
     """
     factor= u.K_RJ.to(u.uK_CMB, equivalencies=u.cmb_equivalencies(freq*u.GHz))/u.K_RJ.to(u.uK_CMB, equivalencies=u.cmb_equivalencies(nu0*u.GHz))
     mapd=np.array([A*mbb(freq[f],beta-2,b_T)/mbb(nu0,beta-2,b_T)*factor[f] for f in range(len(freq))])
@@ -61,16 +68,23 @@ def MBBpysm(freq,A,beta,b_T,nu0):
 
 def PLpysm(freq,A,beta,nu0):
     """Power-law function to reproduce Pysm models.
-
-    :param freq: array of frequencies in GHz at which to evaluate the SED.
-    :type freq: array of floats.
-    :param A: Amplitude map for the model in muK_CMB
-    :type A: array of floats.
-    :param beta: spectral index of the power-law.
-    :param nu0: pivot frequency in GHz.
-    :type nu0: float.
-    :return: float -- power-law brightness.
     
+    Parameters
+    ----------
+    freq: float or numpy array
+        Frequencie(s) in GHz at which to evaluate the SED.
+    A: float or healpy map
+        Amplitude map for the model in muK_CMB
+    beta: float 
+        spectral index of modified blackbody.
+    b_T: float
+        inverse temperature of modified black body.
+    nu0: float
+        pivot frequency in GHz.
+    
+    Returns
+    -------
+    float -- power-law brightness.
     """
     factor= u.K_RJ.to(u.uK_CMB, equivalencies=u.cmb_equivalencies(freq*u.GHz))/u.K_RJ.to(u.uK_CMB, equivalencies=u.cmb_equivalencies(nu0*u.GHz))
     mapd=np.array([A*(freq[f]/nu0)**(beta)*factor[f] for f in range(len(freq))])
@@ -81,13 +95,22 @@ def PLpysm(freq,A,beta,nu0):
 
 def downgrade_alm(input_alm,nside_in,nside_out):
     """
-    This is a Function to downgrade Alm correctly.
-    nside_in must be bigger than nside_out.
-    In this function, lmax_in = 3*nside_in-1 , lmax_out = 3*nside_out-1 .
-    input_alm must be lmax = lmax_in and output_alm must be lmax = lmax_out.
-    This function get only values in the range 0 < l < lmax_out from input_alm,
-    and put these values into output_alm which has range 0 < l < lmax_out.
+    Downgrade in Alm space.
+    
+    Parameters
+    ----------
+    input_alm : numpy array
+        array of alm in healpy order.
+    nside_in: float
+        nside of the original map. Must be bigger than nside_out.
+    nside_out: float
+        nside at which to downgrade the maps.
+    
+    Returns
+    -------
+    downgraded alms
     """
+
     lmax_in = nside_in*3-1
     lmax_out = nside_out*3-1
     output_alm = np.zeros((3,hp.sphtfunc.Alm.getsize(lmax_out)),dtype='complex128')
@@ -104,12 +127,21 @@ def downgrade_alm(input_alm,nside_in,nside_out):
 
 def downgrade_map(input_map,nside_out,nside_in=512):
     """
-    This is a Function to downgrade map correctly in harmonic space.
-    nside_in must be bigger than nside_out.
-    input_map must have nside_in.
-    output_map has nside_out as Nside
+    Downgrade map by going in harmonic space.
+    
+    Parameters
+    ----------
+    input_map : numpy array of size (3,npix)
+        original map to be downgraded.
+    nside_out: float
+        nside at which to downgrade the maps.
+    nside_in: float
+        nside of the original map. Must be bigger than nside_out.
+
+    Returns
+    -------
+    downgraded map
     """
-    #  nside_in= hp.npix2nside(len(input_map))
     if nside_out==nside_in:
         return input_map
     else:
@@ -121,20 +153,58 @@ def downgrade_map(input_map,nside_out,nside_in=512):
 #Power spectra functions
 
 def compute_master(f_a, f_b, wsp):
-    """compute decoupled CL with a workspace"""
+    """compute decoupled CL with a workspace
+        
+    Parameters
+    ----------
+
+        f_a: namaster field 
+            first namaster field
+        f_b: namaster field 
+            second namaster field
+        wsp: namaster working space
+    
+    Returns
+    -------
+    Decoupled C_ell(fa,fb)
+    """
     cl_coupled = nmt.compute_coupled_cell(f_a, f_b)
     cl_decoupled = wsp.decouple_cell(cl_coupled)
     return cl_decoupled
 
 def compute_cl(mapd,mask,b):
-    """compute simple CL"""
+    """compute simple CL with B-mode purification.
+    Parameters
+    ----------
+        map_d: singlet (I) or doublet (Q,U) of healpy maps
+            maps from which the spectra are computed
+        mask: healpy map
+            (apodised) mask used for spectra computation
+        b: namaster bining scheme
+    Returns
+    -------
+    Decoupled C_ell of the map over the mask of the form (TT) for intensity, (EE,EB,BE,BB) for polarisation.
+    """    
     fa1 = nmt.NmtField(mask, (mapd)*1,purify_e=False, purify_b=True)
     wsp = nmt.NmtWorkspace()
     wsp.compute_coupling_matrix(fa1, fa1, b)
     return compute_master(fa1,fa1,wsp)        
 
 def compute_cross_cl(mapd1,mapd2,mask,b):
-    """compute cross angular power-spectra"""
+    """compute cross angular power-spectra
+    Parameters
+    ----------
+        map_d1: singlet (I) or doublet (Q,U) of healpy maps
+            first map from which the spectra are computed
+        map_d2: singlet (I) or doublet (Q,U) of healpy maps
+            second map from which the spectra are computed
+        mask: healpy map
+            (apodised) mask used for spectra computation
+        b: namaster bining scheme
+    Returns
+    -------
+    Decoupled C_ell of the map over the mask of the form (TT) for intensity, (EE,EB,BE,BB) for polarisation.
+    """  
     fa1 = nmt.NmtField(mask, (mapd1)*1,purify_e=False, purify_b=True)
     fa2 = nmt.NmtField(mask, (mapd2)*1,purify_e=False, purify_b=True)
     wsp = nmt.NmtWorkspace()
@@ -142,7 +212,22 @@ def compute_cross_cl(mapd1,mapd2,mask,b):
     return compute_master(fa1,fa2,wsp)      
 
 def decorr(mapd,F,mask,b,mode='BB'):
-    """spectral decorrelation"""
+    """compute spectral decorrelation of a map over a mask
+    Parameters
+    ----------
+        map_d: array numpy of size (N_f,2,npix) where N_f is the number of frequency band
+            map from which the decorrelation is computed at various frequency
+        F: float or int
+            index corresponding to the frequency at which decorrelation is to be computed. The decorrelation will be computed between F and F-1.
+        mask: healpy map
+            (apodised) mask used for spectra computation
+        b: namaster bining scheme
+        mode: string
+            Polarisation mode to compute decorraltion .Either 'EE', 'EB', 'BE' or 'BB'.
+    Returns
+    -------
+    Decorrelation in each bin of ell
+    """
     sp_dict = {'EE': 0, 'EB': 1, 'BE':2, 'BB': 3}
     sp = sp_dict.get(mode, None)
     clF= compute_cl(mapd[F],mask,b)
@@ -151,7 +236,22 @@ def decorr(mapd,F,mask,b,mode='BB'):
     return crosscl[sp,2:]/np.sqrt(clF[sp,2:]*clF_1[sp,2:])
 
 def rEB(mapd,F,mask,b):
-    """E/B ratio dependence with frequency """
+    """E/B ratio dependence with frequency 
+    Parameters
+    ----------
+        map_d: array numpy of size (N_f,2,npix) where N_f is the number of frequency band
+            map from which the E/B ratio is computed at various frequency
+        F: float or int
+            index corresponding to the frequency at which E/B is to be computed.
+        mask: healpy map
+            (apodised) mask used for spectra computation
+        b: namaster bining scheme
+        mode: string
+            Polarisation mode to compute decorraltion .Either 'EE', 'EB', 'BE' or 'BB'.
+    Returns
+    -------
+    E/B ratio in each bin of ell at frequency F
+    """
     clF= compute_cl(mapd[F],mask,b)
     return clF[0,2:]/clF[3,2:]
 
@@ -164,6 +264,20 @@ b_Trange= [1/35,1/10]
 def crop_outliers(mom,maxborder=4,maxtorder=4,nsig=10):
     """
     Supress possible outliers in moment maps to avoid possible numerical issues.
+    
+    Parameters
+    ----------
+        mom: array numpy of size (2,border,torder,npix) 
+            moment maps outpouted from the "compute_mom" function
+        maxborder: float or int
+            maximum order  with respect to the spectral index at which the expansion is performed
+        maxtorder: healpy map
+            maximum order  with respect to temperature at which the expansion is performed
+        nsig: float or int
+            number of sigma away from the mean which define the outliers to be removed
+    Returns
+    -------
+    moment maps with the outliers removed
     """
     for b in range(maxtorder+1):
         for t in range(maxborder+1):
@@ -200,7 +314,7 @@ def compute_mom(nside,modelnu0,betamap,tempmap,maxborder=3,maxtorder=3,SED_type=
         pivot spectral index with respect to which the moments are computed. If not specified, the pivot is taken to be the one cancelling first order (ensuring the quickest convergence for the expansion)
     tempbar: float or healpy map
         pivot temperature with respect to which the moments are computed. If not specified, the pivot is taken to be the one cancelling first order (ensuring the quickest convergence for the expansion)
-     pivot_type: string
+    pivot_type: string
          either '2D' or '3D'. If '2D' the pivots are single floats for the whole sky. If '3D' the pivots are maps.
 
     Returns
